@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300;8..144,400;8..144,500;8..144,600;8..144,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 10% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 10% 15%;
+
+    --primary: 14 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 10% 92%;
+    --secondary-foreground: 220 10% 30%;
+
+    --muted: 220 10% 94%;
+    --muted-foreground: 220 5% 45%;
+
+    --accent: 220 10% 92%;
+    --accent-foreground: 220 10% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 88%;
+    --input: 220 10% 88%;
+    --ring: 14 100% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 10% 15%;
+    --sidebar-primary: 14 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 10% 94%;
+    --sidebar-accent-foreground: 220 10% 15%;
+    --sidebar-border: 220 10% 88%;
+    --sidebar-ring: 14 100% 50%;
+
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+  }
+
+  .dark {
+    --background: 220 10% 11%;
+    --foreground: 220 10% 92%;
+    --card: 220 10% 14%;
+    --card-foreground: 220 10% 92%;
+    --popover: 220 10% 14%;
+    --popover-foreground: 220 10% 92%;
+    --primary: 14 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 6% 22%;
+    --secondary-foreground: 220 10% 80%;
+    --muted: 220 6% 18%;
+    --muted-foreground: 220 5% 55%;
+    --accent: 220 6% 22%;
+    --accent-foreground: 220 10% 92%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 6% 20%;
+    --input: 220 6% 20%;
+    --ring: 14 100% 50%;
+    --sidebar-background: 220 10% 11%;
+    --sidebar-foreground: 220 10% 92%;
+    --sidebar-primary: 14 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 6% 18%;
+    --sidebar-accent-foreground: 220 10% 92%;
+    --sidebar-border: 220 6% 20%;
+    --sidebar-ring: 14 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Roboto Flex', sans-serif;
+  }
+
+}
+
+@layer components {
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.5);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">emergency-road-pal</string>
+    <string name="title_activity_main">emergency-road-pal</string>
+    <string name="package_name">app.lovable.e0a11663caf84a9a98b6bd4026186dae</string>
+    <string name="custom_url_scheme">app.lovable.e0a11663caf84a9a98b6bd4026186dae</string>
+</resources>
