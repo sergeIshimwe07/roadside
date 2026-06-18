@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Service, ServiceCategory } from "@/hooks/useServices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { isServiceOpenNow } from "@/lib/operatingHours";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Phone, Navigation, ChevronUp, ChevronDown, Wrench, Heart, BedDouble } from "lucide-react";
+import { Phone, Navigation, ChevronUp, ChevronDown, Wrench, Heart, BedDouble, Search } from "lucide-react";
 
 const categoryConfig: Record<ServiceCategory, { label: string; icon: typeof Wrench; color: string }> = {
   garage: { label: "Garage", icon: Wrench, color: "bg-blue-500/20 text-blue-400" },
@@ -24,6 +26,8 @@ interface ServicePanelProps {
   services: (Service & { distance: number })[];
   activeFilter: ServiceCategory | "all";
   onFilterChange: (filter: ServiceCategory | "all") => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
   selectedService: Service | null;
   onServiceSelect: (service: Service | null) => void;
   isLoading: boolean;
@@ -33,6 +37,8 @@ export default function ServicePanel({
   services,
   activeFilter,
   onFilterChange,
+  searchQuery,
+  onSearchChange,
   selectedService,
   onServiceSelect,
   isLoading,
@@ -40,13 +46,23 @@ export default function ServicePanel({
   const { user: currentUser } = useAuth();
   const [expanded, setExpanded] = useState(true);
 
+  const filteredServices = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return services;
+    return services.filter(
+      (service) =>
+        service.name.toLowerCase().includes(query) ||
+        (service.address || "").toLowerCase().includes(query) ||
+        (service.phone || "").includes(query)
+    );
+  }, [services, searchQuery]);
+
   return (
     <div
       className={`absolute bottom-0 left-0 right-0 z-10 rounded-t-2xl bg-card border-t border-border transition-all duration-300 ${
         expanded ? "max-h-[60vh]" : "max-h-16"
       }`}
     >
-      {/* Handle */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-center py-3"
@@ -60,7 +76,16 @@ export default function ServicePanel({
 
       {expanded && (
         <div className="flex flex-col px-4 pb-4" style={{ maxHeight: "calc(60vh - 48px)" }}>
-          {/* Filter chips */}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search services..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
             {filters.map((f) => (
               <button
@@ -77,22 +102,22 @@ export default function ServicePanel({
             ))}
           </div>
 
-          {/* Service list */}
           <ScrollArea className="flex-1">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
-            ) : services.length === 0 ? (
+            ) : filteredServices.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">
-                No services found nearby
+                {searchQuery.trim() ? "No services match your search" : "No services found nearby"}
               </p>
             ) : (
               <div className="space-y-2">
-                {services.map((service) => {
+                {filteredServices.map((service) => {
                   const config = categoryConfig[service.category];
                   const Icon = config.icon;
                   const isSelected = selectedService?.id === service.id;
+                  const isOpen = service.is_active && isServiceOpenNow(service.operating_hours);
 
                   return (
                     <div
@@ -124,21 +149,19 @@ export default function ServicePanel({
                         <Badge
                           variant="outline"
                           className={`text-xs ${
-                            service.is_active
+                            isOpen
                               ? "border-green-500/30 text-green-400"
                               : "border-red-500/30 text-red-400"
                           }`}
                         >
-                          {service.is_active ? "Open" : "Closed"}
+                          {isOpen ? "Open" : "Closed"}
                         </Badge>
                       </div>
 
                       {isSelected && (
                         <div className="mt-3 space-y-2 border-t border-border pt-3">
                           {service.address && (
-                            <p className="text-xs text-muted-foreground">
-                              {service.address}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{service.address}</p>
                           )}
                           {service.operating_hours && (
                             <p className="text-xs text-muted-foreground">
@@ -147,12 +170,11 @@ export default function ServicePanel({
                           )}
                           <div className="flex gap-2">
                             {service.phone && (
-                            <Button
+                              <Button
                                 size="sm"
                                 className="flex-1"
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  // Save call to history first
                                   if (currentUser) {
                                     await supabase.from("call_history").insert({
                                       user_id: currentUser.id,

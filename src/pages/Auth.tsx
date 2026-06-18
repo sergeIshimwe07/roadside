@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,13 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, isAdmin, isSubscribed, loading: authLoading, accessLoading, resolvePostLoginPath } =
+    useAuth();
   const navigate = useNavigate();
+
+  if (!authLoading && !accessLoading && user) {
+    return <Navigate to={isAdmin || isSubscribed ? "/" : "/payment"} replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +38,8 @@ export default function Auth() {
       if (error) {
         toast.error(error.message);
       } else {
-        navigate("/");
+        const path = await resolvePostLoginPath();
+        navigate(path);
       }
     }
     setLoading(false);

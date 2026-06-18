@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { isValidPhone, sanitizePhoneInput, PHONE_VALIDATION_MESSAGE } from "@/lib/phone";
 
 export default function Profile() {
   const { user, isSubscribed, loading: authLoading } = useAuth();
@@ -37,6 +38,10 @@ export default function Profile() {
 
   const handleSave = async () => {
     if (!user) return;
+    if (phone && !isValidPhone(phone)) {
+      toast.error(PHONE_VALIDATION_MESSAGE);
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
@@ -76,7 +81,13 @@ export default function Profile() {
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" />
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
+                type="tel"
+                inputMode="numeric"
+                placeholder="At least 10 digits"
+              />
             </div>
 
             <div className="rounded-lg border border-border p-3 space-y-1">

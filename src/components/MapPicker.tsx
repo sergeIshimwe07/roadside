@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -19,6 +19,16 @@ function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }
   return null;
 }
 
+function Recenter({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!isNaN(latitude) && !isNaN(longitude)) {
+      map.setView([latitude, longitude], map.getZoom());
+    }
+  }, [latitude, longitude, map]);
+  return null;
+}
+
 interface MapPickerProps {
   latitude: number;
   longitude: number;
@@ -31,13 +41,25 @@ export default function MapPicker({ latitude, longitude, onChange }: MapPickerPr
 
   return (
     <div className="h-[250px] sm:h-[250px] w-full rounded-md overflow-hidden border border-border touch-none">
-      <MapContainer center={center} zoom={hasCoords ? 14 : 12} className="h-full w-full z-0" zoomControl={true} dragging={true} touchZoom={true}>
+      <MapContainer
+        center={center}
+        zoom={hasCoords ? 14 : 12}
+        className="h-full w-full z-0"
+        zoomControl={true}
+        dragging={true}
+        touchZoom={true}
+      >
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <ClickHandler onPick={onChange} />
-        {hasCoords && <Marker position={[latitude, longitude]} icon={pickerIcon} />}
+        {hasCoords && (
+          <>
+            <Marker position={[latitude, longitude]} icon={pickerIcon} />
+            <Recenter latitude={latitude} longitude={longitude} />
+          </>
+        )}
       </MapContainer>
     </div>
   );

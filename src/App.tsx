@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import DeviceGate from "@/components/DeviceGate";
 import Index from "./pages/Index";
+import Payment from "./pages/Payment";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
@@ -24,6 +25,7 @@ const App = () => (
           <DeviceGate>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/payment" element={<Payment />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/profile" element={<Profile />} />

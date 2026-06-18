@@ -25,7 +25,10 @@ import { toast } from "sonner";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Pencil, Trash2, MapPin, Users, Wrench, CreditCard } from "lucide-react";
 import MapPicker from "@/components/MapPicker";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isValidPhone, sanitizePhoneInput, PHONE_VALIDATION_MESSAGE } from "@/lib/phone";
+import { OPERATING_HOURS_EXAMPLES, OPERATING_HOURS_HINT } from "@/lib/operatingHours";
 
 interface ServiceFormData {
   name: string;
@@ -69,11 +72,28 @@ function ServiceForm({ form, setForm, editingId, submitting, onSubmit }: {
       </div>
       <div className="space-y-2">
         <Label>Phone</Label>
-        <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+        <Input
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: sanitizePhoneInput(e.target.value) })}
+          type="tel"
+          inputMode="numeric"
+          placeholder="At least 10 digits"
+        />
       </div>
       <div className="space-y-2">
         <Label>Address</Label>
-        <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+        <AddressAutocomplete
+          value={form.address}
+          onChange={(address) => setForm({ ...form, address })}
+          onPlaceSelect={({ address, latitude, longitude }) =>
+            setForm({
+              ...form,
+              address,
+              latitude: String(latitude),
+              longitude: String(longitude),
+            })
+          }
+        />
       </div>
       <div className="space-y-2">
         <Label className="flex items-center gap-1">
@@ -98,7 +118,15 @@ function ServiceForm({ form, setForm, editingId, submitting, onSubmit }: {
       </div>
       <div className="space-y-2">
         <Label>Operating Hours</Label>
-        <Input value={form.operating_hours} onChange={(e) => setForm({ ...form, operating_hours: e.target.value })} placeholder="e.g. Mon-Fri 8AM-6PM" />
+        <Input
+          value={form.operating_hours}
+          onChange={(e) => setForm({ ...form, operating_hours: e.target.value })}
+          placeholder="e.g. Mon-Fri 8AM-6PM"
+        />
+        <p className="text-xs text-muted-foreground">{OPERATING_HOURS_HINT}</p>
+        <p className="text-xs text-muted-foreground">
+          Examples: {OPERATING_HOURS_EXAMPLES.join(" · ")}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
@@ -360,6 +388,12 @@ export default function Admin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (form.phone && !isValidPhone(form.phone)) {
+      toast.error(PHONE_VALIDATION_MESSAGE);
+      return;
+    }
+
     setSubmitting(true);
 
     const payload = {
