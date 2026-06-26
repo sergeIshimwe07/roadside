@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Tablet, Smartphone } from "lucide-react";
 
 const MAX_WIDTH = 1024;
 
 export default function DeviceGate({ children }: { children: React.ReactNode }) {
   const [blocked, setBlocked] = useState(false);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const check = () => setBlocked(window.innerWidth > MAX_WIDTH);
@@ -13,7 +15,7 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  if (blocked) {
+  if (blocked && !pathname.startsWith("/admin")) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-6 px-6 text-center">
         <div className="flex gap-4">

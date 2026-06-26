@@ -1,4 +1,4 @@
-package app.lovable.e0a11663caf84a9a98b6bd4026186dae;
+package com.roadsideally.app;
 
 import com.getcapacitor.BridgeActivity;
 

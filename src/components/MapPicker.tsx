@@ -2,10 +2,14 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 const pickerIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
@@ -22,10 +26,21 @@ function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }
 function Recenter({ latitude, longitude }: { latitude: number; longitude: number }) {
   const map = useMap();
   useEffect(() => {
-    if (!isNaN(latitude) && !isNaN(longitude)) {
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
       map.setView([latitude, longitude], map.getZoom());
     }
   }, [latitude, longitude, map]);
+  return null;
+}
+
+function ResizeOnMount() {
+  const map = useMap();
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [map]);
   return null;
 }
 
@@ -33,14 +48,19 @@ interface MapPickerProps {
   latitude: number;
   longitude: number;
   onChange: (lat: number, lng: number) => void;
+  disabled?: boolean;
 }
 
-export default function MapPicker({ latitude, longitude, onChange }: MapPickerProps) {
-  const hasCoords = !isNaN(latitude) && !isNaN(longitude) && latitude !== 0 && longitude !== 0;
+export default function MapPicker({ latitude, longitude, onChange, disabled = false }: MapPickerProps) {
+  const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
   const center: [number, number] = hasCoords ? [latitude, longitude] : [-1.2921, 36.8219];
 
   return (
-    <div className="h-[250px] sm:h-[250px] w-full rounded-md overflow-hidden border border-border touch-none">
+    <div
+      className="h-[250px] sm:h-[250px] w-full rounded-md overflow-hidden border border-border touch-none"
+      style={{ pointerEvents: disabled ? "none" : "auto" }}
+      aria-disabled={disabled}
+    >
       <MapContainer
         center={center}
         zoom={hasCoords ? 14 : 12}
@@ -53,6 +73,7 @@ export default function MapPicker({ latitude, longitude, onChange }: MapPickerPr
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
+        <ResizeOnMount />
         <ClickHandler onPick={onChange} />
         {hasCoords && (
           <>

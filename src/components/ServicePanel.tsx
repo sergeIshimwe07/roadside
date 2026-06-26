@@ -59,13 +59,15 @@ export default function ServicePanel({
 
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 z-10 rounded-t-2xl bg-card border-t border-border transition-all duration-300 ${
-        expanded ? "max-h-[60vh]" : "max-h-16"
+      className={`absolute bottom-0 left-0 right-0 z-10 rounded-t-2xl border-t border-border bg-card transition-all duration-300 ${
+        expanded ? "h-[60vh]" : "h-16"
       }`}
     >
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-center py-3"
+        aria-expanded={expanded}
+        aria-label={expanded ? "Collapse service panel" : "Expand service panel"}
       >
         {expanded ? (
           <ChevronDown className="h-5 w-5 text-muted-foreground" />
@@ -75,8 +77,8 @@ export default function ServicePanel({
       </button>
 
       {expanded && (
-        <div className="flex flex-col px-4 pb-4" style={{ maxHeight: "calc(60vh - 48px)" }}>
-          <div className="relative mb-3">
+        <div className="flex h-[calc(60vh-48px)] min-h-0 flex-col px-4 pb-4">
+          <div className="relative mb-3 shrink-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search services..."
@@ -86,15 +88,16 @@ export default function ServicePanel({
             />
           </div>
 
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1 pr-1">
             {filters.map((f) => (
               <button
                 key={f.value}
                 onClick={() => onFilterChange(f.value)}
-                className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                aria-pressed={activeFilter === f.value}
+                className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                   activeFilter === f.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-accent"
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-background text-muted-foreground hover:border-accent-foreground/20 hover:bg-accent hover:text-foreground"
                 }`}
               >
                 {f.label}
@@ -102,7 +105,7 @@ export default function ServicePanel({
             ))}
           </div>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="min-h-0 flex-1">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -112,7 +115,7 @@ export default function ServicePanel({
                 {searchQuery.trim() ? "No services match your search" : "No services found nearby"}
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 pr-1">
                 {filteredServices.map((service) => {
                   const config = categoryConfig[service.category];
                   const Icon = config.icon;
@@ -126,7 +129,7 @@ export default function ServicePanel({
                       className={`cursor-pointer rounded-lg border p-3 transition-colors ${
                         isSelected
                           ? "border-primary bg-primary/5"
-                          : "border-border hover:border-muted-foreground/30"
+                          : "border-border hover:border-muted-foreground/30 hover:bg-accent/30"
                       }`}
                     >
                       <div className="flex items-start justify-between">

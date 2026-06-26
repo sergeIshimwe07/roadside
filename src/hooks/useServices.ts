@@ -27,11 +27,19 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function useServices(userLat?: number, userLon?: number, category?: ServiceCategory | "all") {
+export function useServices(
+  userLat?: number,
+  userLon?: number,
+  category?: ServiceCategory | "all",
+  includeInactive = false
+) {
   return useQuery({
-    queryKey: ["services", category, userLat, userLon],
+    queryKey: ["services", category, userLat, userLon, includeInactive],
     queryFn: async () => {
-      let query = supabase.from("services").select("*").eq("is_active", true);
+      let query = supabase.from("services").select("*");
+      if (!includeInactive) {
+        query = query.eq("is_active", true);
+      }
       if (category && category !== "all") {
         query = query.eq("category", category);
       }

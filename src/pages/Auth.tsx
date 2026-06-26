@@ -14,8 +14,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, user, isAdmin, isSubscribed, loading: authLoading, accessLoading, resolvePostLoginPath } =
-    useAuth();
+  const { signIn, signUp, user, isAdmin, isSubscribed, loading: authLoading, accessLoading } = useAuth();
   const navigate = useNavigate();
 
   if (!authLoading && !accessLoading && user) {
@@ -25,24 +24,27 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    if (isSignUp) {
-      const { error } = await signUp(email, password, fullName);
-      if (error) {
-        toast.error(error.message);
+    try {
+      if (isSignUp) {
+        const { error } = await signUp(email, password, fullName);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Check your email to confirm your account!");
+        }
       } else {
-        toast.success("Check your email to confirm your account!");
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          navigate("/", { replace: true });
+        }
       }
-    } else {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        const path = await resolvePostLoginPath();
-        navigate(path);
-      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Authentication failed");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

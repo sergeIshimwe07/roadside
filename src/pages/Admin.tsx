@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Component, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useServices, Service, ServiceCategory } from "@/hooks/useServices";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,26 @@ interface ServiceFormData {
   is_active: boolean;
 }
 
+class SectionErrorBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("Admin form section failed to render:", error);
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
 const emptyForm: ServiceFormData = {
   name: "", category: "garage", phone: "", address: "",
   latitude: "", longitude: "", operating_hours: "", is_active: true,
@@ -48,20 +68,60 @@ const emptyForm: ServiceFormData = {
 
 function ServiceForm({ form, setForm, editingId, submitting, onSubmit }: {
   form: ServiceFormData;
-  setForm: (f: ServiceFormData) => void;
+  setForm: Dispatch<SetStateAction<ServiceFormData>>;
   editingId: string | null;
   submitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const [addressSuggestionsOpen, setAddressSuggestionsOpen] = useState(false);
+
+  const locationFallback = (
+    <div className="space-y-4 rounded-md border border-dashed border-border p-3">
+      <div className="space-y-2">
+        <Label>Address</Label>
+        <Input
+          value={form.address}
+          onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+          placeholder="Enter address manually"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Latitude</Label>
+          <Input
+            type="number"
+            step="any"
+            value={form.latitude}
+            onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Longitude</Label>
+          <Input
+            type="number"
+            step="any"
+            value={form.longitude}
+            onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
+            required
+          />
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Address lookup failed, so manual entry is enabled for this service.
+      </p>
+    </div>
+  );
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Name</Label>
-        <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+        <Input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} required />
       </div>
       <div className="space-y-2">
         <Label>Category</Label>
-        <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as ServiceCategory })}>
+        <Select value={form.category} onValueChange={(v) => setForm((prev) => ({ ...prev, category: v as ServiceCategory }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="garage">Garage</SelectItem>
@@ -74,7 +134,7 @@ function ServiceForm({ form, setForm, editingId, submitting, onSubmit }: {
         <Label>Phone</Label>
         <Input
           value={form.phone}
-          onChange={(e) => setForm({ ...form, phone: sanitizePhoneInput(e.target.value) })}
+          onChange={(e) => setForm((prev) => ({ ...prev, phone: sanitizePhoneInput(e.target.value) }))}
           type="tel"
           inputMode="numeric"
           placeholder="At least 10 digits"
@@ -82,45 +142,65 @@ function ServiceForm({ form, setForm, editingId, submitting, onSubmit }: {
       </div>
       <div className="space-y-2">
         <Label>Address</Label>
-        <AddressAutocomplete
-          value={form.address}
-          onChange={(address) => setForm({ ...form, address })}
-          onPlaceSelect={({ address, latitude, longitude }) =>
-            setForm({
-              ...form,
-              address,
-              latitude: String(latitude),
-              longitude: String(longitude),
-            })
-          }
-        />
+        <SectionErrorBoundary fallback={locationFallback}>
+          <AddressAutocomplete
+            value={form.address}
+            onChange={(address) => setForm((prev) => ({ ...prev, address }))}
+            onPlaceSelect={({ address, latitude, longitude }) =>
+              setForm((prev) => ({
+                ...prev,
+                address,
+                latitude: String(latitude),
+                longitude: String(longitude),
+              }))
+            }
+            onOpenChange={setAddressSuggestionsOpen}
+          />
+        </SectionErrorBoundary>
       </div>
       <div className="space-y-2">
         <Label className="flex items-center gap-1">
           <MapPin className="h-3.5 w-3.5" /> Pick Location on Map
         </Label>
-        <MapPicker
-          latitude={parseFloat(form.latitude)}
-          longitude={parseFloat(form.longitude)}
-          onChange={(lat, lng) => setForm({ ...form, latitude: String(lat), longitude: String(lng) })}
-        />
+        <SectionErrorBoundary fallback={locationFallback}>
+          <MapPicker
+            latitude={parseFloat(form.latitude)}
+            longitude={parseFloat(form.longitude)}
+            onChange={(lat, lng) =>
+              setForm((prev) => ({ ...prev, latitude: String(lat), longitude: String(lng) }))
+            }
+            disabled={addressSuggestionsOpen}
+          />
+        </SectionErrorBoundary>
         <p className="text-xs text-muted-foreground">Tap on the map to set location</p>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Latitude</Label>
-          <Input type="number" step="any" value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} required />
+          <Input
+            type="number"
+            step="any"
+            value={form.latitude}
+            onChange={(e) => setForm((prev) => ({ ...prev, latitude: e.target.value }))}
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label>Longitude</Label>
-          <Input type="number" step="any" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} required />
+          <Input
+            type="number"
+            step="any"
+            value={form.longitude}
+            onChange={(e) => setForm((prev) => ({ ...prev, longitude: e.target.value }))}
+            required
+          />
         </div>
       </div>
       <div className="space-y-2">
         <Label>Operating Hours</Label>
         <Input
           value={form.operating_hours}
-          onChange={(e) => setForm({ ...form, operating_hours: e.target.value })}
+          onChange={(e) => setForm((prev) => ({ ...prev, operating_hours: e.target.value }))}
           placeholder="e.g. Mon-Fri 8AM-6PM"
         />
         <p className="text-xs text-muted-foreground">{OPERATING_HOURS_HINT}</p>
@@ -129,7 +209,7 @@ function ServiceForm({ form, setForm, editingId, submitting, onSubmit }: {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+        <Switch checked={form.is_active} onCheckedChange={(v) => setForm((prev) => ({ ...prev, is_active: v }))} />
         <Label>Active</Label>
       </div>
       <Button type="submit" className="w-full" disabled={submitting}>
@@ -345,7 +425,7 @@ export default function Admin() {
   const { isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: services = [], isLoading } = useServices();
+  const { data: services = [], isLoading } = useServices(undefined, undefined, undefined, true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ServiceFormData>(emptyForm);
@@ -354,9 +434,23 @@ export default function Admin() {
   const [submitting, setSubmitting] = useState(false);
   const isMobile = useIsMobile();
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center gap-4">
+        <h1 className="text-2xl font-bold">Admin access required</h1>
+        <p className="max-w-sm text-muted-foreground">
+          This account is not marked as an admin in Supabase, so the admin dashboard cannot load its data.
+        </p>
+        <Button onClick={() => navigate("/")}>Go back</Button>
+      </div>
+    );
   }
 
   const filteredServices = services.filter((s) => {
@@ -389,21 +483,34 @@ export default function Admin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const latitude = Number(form.latitude);
+    const longitude = Number(form.longitude);
+
+    if (!form.name.trim()) {
+      toast.error("Service name is required");
+      return;
+    }
+
     if (form.phone && !isValidPhone(form.phone)) {
       toast.error(PHONE_VALIDATION_MESSAGE);
+      return;
+    }
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      toast.error("Please enter a valid latitude and longitude");
       return;
     }
 
     setSubmitting(true);
 
     const payload = {
-      name: form.name,
+      name: form.name.trim(),
       category: form.category as ServiceCategory,
       phone: form.phone || null,
       address: form.address || null,
-      latitude: parseFloat(form.latitude),
-      longitude: parseFloat(form.longitude),
-      operating_hours: form.operating_hours || null,
+      latitude,
+      longitude,
+      operating_hours: form.operating_hours.trim() || null,
       is_active: form.is_active,
     };
 
@@ -504,6 +611,9 @@ export default function Admin() {
                   <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{editingId ? "Edit Service" : "Add New Service"}</DialogTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Enter the service details, address, and location below.
+                      </p>
                     </DialogHeader>
                     <ServiceForm form={form} setForm={setForm} editingId={editingId} submitting={submitting} onSubmit={handleSubmit} />
                   </DialogContent>

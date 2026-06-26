@@ -93,6 +93,17 @@
 }
 
 @layer components {
+  .pac-container {
+    z-index: 99999 !important;
+    position: fixed !important;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .pac-item {
+    font-family: inherit;
+  }
+
   @keyframes pulse-ring {
     0% {
       transform: scale(0.5);
